@@ -104,8 +104,7 @@ install-lib: ${LIBDJVU_LA} FORCE
 
 install-include: FORCE
 	${INSTALL} -d ${DESTDIR}${includedir}/libdjvu
-	${INSTALL_DATA} ${srcdir}/ddjvuapi.h ${DESTDIR}${includedir}/libdjvu
-	${INSTALL_DATA} ${srcdir}/miniexp.h ${DESTDIR}${includedir}/libdjvu
+	${INSTALL_DATA} ${srcdir}/*.h ${DESTDIR}${includedir}/libdjvu
 
 install-pkgconfig: FORCE
 	${INSTALL} -d ${DESTDIR}${libdir}/pkgconfig
