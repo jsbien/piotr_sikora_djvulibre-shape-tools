@@ -27,7 +27,7 @@ USAGE
 To use exportshapes, you need to provide it with a database name, host name, username, password and
 a filename to process. This will extract all shapes from the given document 
 
-./exportshapes [-i | -o | -c] -u <username> -p <password> -h <host> -d <database> <file.djvu>
+./exportshapes [-i | -c | -o] [-t <page #>] [-f <page #>] -u <username> -p <password> -h <host> -d <database> <file.djvu>
 
 Options -u, -p, -h, -d supply required parameters.
 
@@ -37,11 +37,18 @@ Option -c creates a database of the given name and then injects required tables 
 
 Option -o does the same as -c, but also drops the database first, if it exists already. Good for testing.
 
+Option -f: its argument specifies a page number from which the processing should start.
+
+Option -t: its argument specifies a limit to the number of pages processed by the program.
+
+E.g. "exportshapes -f 5 -t 10 [...]" would export shapes from pages 5,6,7,8,9 and 10.
+
 DATABASE STRUCTURE
 ==================
 
 TABLE shapes:
 id INT not null auto_increment primary key,
+original_id INT not null, -- index in the page dictionary the shape comes from
 parent_id INT not null, -- references other shapes
 bits LONGBLOB,
 width INT,
