@@ -506,7 +506,7 @@ void fetch_inherited_dictionary(int inh_dict_id, std::map<int,int> &inherited_sh
 int process_document(int page_from, int page_to, GP<DjVuDocument> doc, int doc_id, MYSQL* conn) {
 	const int pages = doc->get_pages_num();
 	int page_start, page_limit;
-	page_start = (page_from < 0) ? 0 : page_from - 1;
+	page_start = (page_from < 1) ? 0 : page_from - 1;
 	if (page_to < 1 || page_to >= pages)
 		page_limit = pages;
 	else
@@ -676,7 +676,7 @@ int main(int argc, char **argv) {
 		int c;
 		bool create_db = false, inject_db = false, overwrite_db = false;
 		int required_arguments = 0;
-		int page_from = 0 , page_to = -1;
+		int page_from = 1 , page_to = -1;
 		while ((c = getopt (argc, argv, "Toicd:u:h:p:f:t:")) != -1)
 			switch (c)
 		    {
