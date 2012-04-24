@@ -460,7 +460,6 @@ int check_for_dictionary_in_database(std::string dictionary_name, MYSQL* conn) {
 	if (test_run)
 		std::cout << "Queried with return code " << query_retval << mysql_error(conn) << std::endl;
 
-
 	result = mysql_store_result(conn);
 
 	if (test_run)
@@ -478,6 +477,43 @@ int check_for_dictionary_in_database(std::string dictionary_name, MYSQL* conn) {
 	mysql_free_result(result);
 	return -1; // dictionary not found
 }
+
+int check_for_document_in_database(std::string document_name, MYSQL* conn) {
+	if (test_run)
+		std::cout << "Checking for document: " << document_name << std::endl;
+
+	MYSQL_RES *result;
+	MYSQL_ROW row;
+
+	std::string query("SELECT id FROM documents WHERE document = \'");
+	query += document_name + '\'';
+
+	if (test_run)
+		std::cout << "Querying " << query << std::endl;
+
+	int query_retval = mysql_query(conn, query.c_str());
+	if (test_run)
+		std::cout << "Queried with return code " << query_retval << mysql_error(conn) << std::endl;
+
+	result = mysql_store_result(conn);
+
+	if (test_run)
+		std::cout << "Received result with " << mysql_num_rows(result) << " rows." << std::endl;
+
+	if (mysql_num_rows(result) > 0) {
+		row = mysql_fetch_row(result);
+		if (test_run)
+				std::cout << "Fetched a row " << row[0] << std::endl;
+		mysql_free_result(result);
+		return atoi(row[0]);
+	}
+	if (test_run)
+			std::cout << "Freeing " << std::endl;
+	mysql_free_result(result);
+	return -1; // dictionary not found
+
+}
+
 
 void fetch_inherited_dictionary(int inh_dict_id, std::map<int,int> &inherited_shape_translation, MYSQL* conn) {
 	if (test_run)
@@ -776,7 +812,10 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 
-		int doc_id = store_document(filename, conn);
+		int doc_id = check_for_document_in_database(filename, conn);
+		if (doc_id == -1) {
+			doc_id = store_document(filename, conn);
+		}
 		return process_document(page_from, page_to, doc, doc_id, conn);
 	}
 	catch (exception& ex) {
