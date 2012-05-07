@@ -36,7 +36,7 @@ bool test_run = false;
 
 int create_database(const char * dbname, MYSQL *conn, const bool overwrite) {
 	if (overwrite) {
-		string query = "drop database ";
+		string query = "drop database if exists ";
 		query.append(dbname);
 		if (mysql_query(conn, query.c_str())) {
 			std::cerr << "Dropping the database failed:  " << mysql_errno(conn) << ": " <<  mysql_error(conn) << std::endl;
@@ -569,14 +569,14 @@ int process_document(int page_from, int page_to, GP<DjVuDocument> doc, int doc_i
 	for(int page_number = page_start; page_number < page_limit; page_number++) {
 		GP<DjVuImage> djvu_page = doc->get_page(page_number);
 		if (!djvu_page) {
-			std::cout << "get_page failed";
+			std::cout << "Failed to get DjVuImage for page" << page_number << std::endl;
 		} else {
 			GP<DjVuFile> djvu_file = djvu_page->get_djvu_file();
 			GP<JB2Image> jimg = djvu_page->get_fgjb();
 			if (!djvu_file) {
-				std::cout << "get_djvu_file failed";
+				std::cout << "Failed to get DjVUFile for page " << page_number << std::endl;
 			} else if (!jimg) {
-				std::cout << "get_fgjb failed";
+				std::cout << "Failed to get JB2Image for page " << page_number << std::endl;
 			} else {//export shapes
 				std::cout << "Processing page " << page_number << " containing " << jimg->get_shape_count() << " shapes, " <<
 						jimg->get_inherited_shape_count() << " of them inherited." << std::endl;
@@ -805,6 +805,8 @@ int main(int argc, char **argv) {
 		}
 
 		const GURL::Filename::UTF8 url(filename);
+
+
 		GP<DjVuDocument> doc = DjVuDocument::create_wait(url);
 
 		if (!doc) {
@@ -822,6 +824,6 @@ int main(int argc, char **argv) {
 		std::cout << "An exception occurred: " << ex.what() << "\n";
 		return EXIT_FAILURE;
 	}
-	//return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 
