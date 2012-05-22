@@ -65,7 +65,7 @@ int create_tables(MYSQL *conn) { // create tables
 		return 1;
 	}
 	if (mysql_query(conn,
-		"create table documents (id INT not null auto_increment primary key, document varchar(60) not null);"
+		"create table documents (id INT not null auto_increment primary key, document varchar(60) not null, document_address varchar(100));"
 			)){
 		std::cerr << "Error during table creation:  " << mysql_errno(conn) << ": " <<  mysql_error(conn) << std::endl;
 		return 1;
@@ -404,23 +404,26 @@ int store_dictionary(int document_id, int page_number, string dict_name, MYSQL *
 }
 
 
-int store_document (char * document, MYSQL *conn) {
+int store_document (char * document, char * document_address, MYSQL *conn) {
     MYSQL_STMT *pinsert_stmt = mysql_stmt_init(conn);
     BOOST_SCOPE_EXIT( (pinsert_stmt) ) {
         mysql_stmt_close(pinsert_stmt);
     } BOOST_SCOPE_EXIT_END
 
-    const char sql[] = "INSERT INTO documents(document) VALUES (?)";
+    const char sql[] = "INSERT INTO documents(document, document_address) VALUES (?,?)";
     if (mysql_stmt_prepare(pinsert_stmt, sql, strlen(sql)) != 0) {
             cerr << "Error: mysql_stmt_prepare() failed to prepare `" << sql << "`:" << endl << mysql_stmt_error(pinsert_stmt) << endl;
             return EXIT_FAILURE;
     }
     unsigned long length = 2 * strlen (document) + 1;
     char prepared_document[length];
-
     unsigned long prepared_length = mysql_real_escape_string(conn, prepared_document, document, strlen(document));
 
-    MYSQL_BIND bind_structs[1];
+    unsigned long length_address = 2 * strlen (document_address) + 1;
+    char prepared_document_address[length_address];
+    unsigned long prepared_length_address = mysql_real_escape_string(conn, prepared_document_address, document_address, strlen(document_address));
+
+    MYSQL_BIND bind_structs[2];
     memset(bind_structs, 0, sizeof(bind_structs));
 
     bind_structs[0].length = &prepared_length;
@@ -428,6 +431,12 @@ int store_document (char * document, MYSQL *conn) {
     bind_structs[0].is_null = 0;
     bind_structs[0].buffer = (void *) &prepared_document;
     bind_structs[0].buffer_length = strlen(prepared_document) * sizeof(char);
+
+    bind_structs[1].length = &prepared_length_address;
+    bind_structs[1].buffer_type = MYSQL_TYPE_VAR_STRING;
+    bind_structs[1].is_null = 0;
+    bind_structs[1].buffer = (void *) &prepared_document_address;
+    bind_structs[1].buffer_length = strlen(prepared_document_address) * sizeof(char);
 
     cout << (char *) bind_structs[0].buffer << endl;
     if (mysql_stmt_bind_param(pinsert_stmt, bind_structs) != 0) {
@@ -708,12 +717,12 @@ int main(int argc, char **argv) {
 		const char *db_user;
 		const char *db_host;
 		const char *db_passwd;
-		char *filename;
+		char *filename, *doc_address;
 		int c;
-		bool create_db = false, inject_db = false, overwrite_db = false;
+		bool create_db = false, inject_db = false, overwrite_db = false, given_address = false;
 		int required_arguments = 0;
 		int page_from = 1 , page_to = -1;
-		while ((c = getopt (argc, argv, "Toicd:u:h:p:f:t:")) != -1)
+		while ((c = getopt (argc, argv, "Toicd:u:h:p:f:t:a:")) != -1)
 			switch (c)
 		    {
 				case 'T':
@@ -753,6 +762,10 @@ int main(int argc, char **argv) {
 					inject_db = true;
 					overwrite_db = true;
 					break;
+				case 'a':
+					doc_address = optarg;
+					given_address = true;
+					break;
 				case '?':
 		    	 usage(argv);
 		         return 1;
@@ -770,7 +783,11 @@ int main(int argc, char **argv) {
 			usage(argv);
 			return 1;
 		}
-
+		
+		if (!given_address) {
+			doc_address = filename;
+		}
+		
 		MYSQL *conn = mysql_init(NULL);
 		BOOST_SCOPE_EXIT( (conn) ) {
 			mysql_close(conn);
@@ -816,7 +833,7 @@ int main(int argc, char **argv) {
 
 		int doc_id = check_for_document_in_database(filename, conn);
 		if (doc_id == -1) {
-			doc_id = store_document(filename, conn);
+			doc_id = store_document(filename, doc_address, conn);
 		}
 		return process_document(page_from, page_to, doc, doc_id, conn);
 	}
